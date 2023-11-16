@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore Site Selector</title>
+</head>
+<body>
+    <h1>Firestore Site Selector</h1>
+
+    <!-- Selector for Cities (Populated from Firestore) -->
+    <label for="site-selector">Select a Site:</label>
+    <select id="site-selector">
+        <option disabled selected>Select</option>
+    </select>
+
+    <h1>Site Info</h1>
+    <div id="site-form">
+        <input type="text" id="site-name-input" placeholder="Name" />
+        <input type="text" id="site-latitude-input" placeholder="Latitude" />
+        <input type="text" id="site-longitude-input" placeholder="Longitude" />
+        <button id="save-site" >Save</button>
+        <button id="edit-site" >Edit</button>
+        <button id="delete-site" >Delete</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"></script>
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+        import { getFirestore, setDoc, getDocs, getDoc, doc, collection, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+        // Initialize Firebase (use your own Firebase configuration)
+        const firebaseConfig = {
+        apiKey: "AIzaSyBgGXJoqe-stLcxVS7uERM6l3SOtu1Ez5Y",
+        authDomain: "gera-6e9ee.firebaseapp.com",
+        projectId: "gera-6e9ee",
+        storageBucket: "gera-6e9ee.appspot.com",
+        messagingSenderId: "331888265233",
+        appId: "1:331888265233:web:22f3ec6417d6b8ff3a49b0"
+    };
+
+
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const collectionName = "users"; // Specify the collection name where you want to store user data
+        const db = getFirestore(app);
+
+
+        let selectedSite1 = [];
+
+        const siteSelector = document.getElementById("site-selector");
+        const siteNameInput = document.getElementById("site-name-input");
+        const siteLatitudeInput = document.getElementById("site-latitude-input");
+        const siteLongitudeInput = document.getElementById("site-longitude-input");
+        const deleteButton = document.getElementById("delete-site");
+        const saveButton = document.getElementById("save-site");
+        const editButton = document.getElementById("edit-site");
+
+        // Function to populate the selector with sites from Firestore
+        function populateSiteSelector() {
+            auth.onAuthStateChanged(async (user) => {
+                if(user){
+                    const userId = user.uid;
+                    const userRef = doc(db, collectionName, userId);
+                    const siteDataRef = collection(userRef, "sites");
+                    const querySnapshot = await getDocs(siteDataRef);
+
+                    querySnapshot.forEach((doc) => {
+                        const siteName = doc.data().Name; // Assuming you have a field called "name" in your city documents
+                        const siteId = doc.id;
+                        const option = document.createElement("option");
+                        option.value = siteId;
+                        option.text = siteName;
+                        siteSelector.appendChild(option);
+                    });
+                    
+                }
+            });
+        }
+
+
+        // Event listener for when the user selects a city
+        siteSelector.addEventListener("change", (event) => {
+            const selectedsite = siteSelector.options[siteSelector.selectedIndex];
+            selectedSite1 = {
+                siteName : selectedsite.text,
+                siteId : selectedsite.value
+            };
+            console.log("Selected City Name: " + selectedsite.text);
+            console.log("Selected City ID: " + selectedsite.value);
+            
+            auth.onAuthStateChanged(async (user) => {
+                if(user){
+                    const userId = user.uid;
+                    const siteData = doc(db, collectionName, userId, "sites", selectedsite.value);
+
+                    getDoc(siteData).then((docSnapshot) => {
+                    const data = docSnapshot.data();
+                    console.log("Data from nested document:", data);
+                    siteNameInput.value = selectedSite1["siteName"];
+                    siteLatitudeInput.value = data["Latitude"];
+                    siteLongitudeInput.value = data["Longitude"];
+                    })
+                }
+            });
+
+            
+        });
+
+
+    saveButton.addEventListener("click", () => {
+
+        auth.onAuthStateChanged((user) => {
+            if(user){
+                const userId = user.uid;
+                const userRef = doc(db, collectionName, userId);
+                
+                    addDoc(collection(userRef, "sites"), {
+                        Name: siteNameInput.value,
+                        Latitude: siteLatitudeInput.value,
+                        Longitude: siteLongitudeInput.value
+                    })
+                        .then((docRef) => {
+                            const siteId  = docRef.id;
+                            console.log("site added succesfuly ",siteId);
+                            siteSelector.innerHTML = "<option disabled selected>Select</option>";      
+                                    siteNameInput.value = "";
+                                    siteLatitudeInput.value = "";
+                                    siteLongitudeInput.value = "";
+                                    selectedSite1["siteId"] = null;
+                                    populateSiteSelector();
+                        });
+                
+            }
+        })
+    })
+
+    editButton.addEventListener("click", () => {
+        auth.onAuthStateChanged((user) => {
+            if(user){
+                const userId = user.uid;
+                const siteRef = doc(db, collectionName, userId, "sites", selectedSite1["siteId"]);
+                const dataToUpdate = {
+                    Name: siteNameInput.value,
+                    Latitude: siteLatitudeInput.value,
+                    Longitude: siteLongitudeInput.value,
+                    };
+                updateDoc(siteRef,dataToUpdate)
+                .then(() => {
+                    console.log("Document successfully updated.");
+                    siteSelector.innerHTML = "<option disabled selected>Select</option>";
+                            siteNameInput.value = "";
+                            siteLatitudeInput.value = "";
+                            siteLongitudeInput.value = "";
+                            selectedSite1["siteId"] = null;
+                            populateSiteSelector();
+                })
+                .catch((error) => {
+                    console.error("Error updating document: ", error);
+                });
+
+            }
+        });
+
+    });
+
+        deleteButton.addEventListener("click", () => {
+            if (selectedSite1["siteId"]){
+                auth.onAuthStateChanged(async (user) => {
+                    if(user){
+                        const userId = user.uid;
+                        const siteData = doc(db, collectionName, userId, "sites", selectedSite1["siteId"]);
+                        deleteDoc(siteData)
+                        .then(() => {
+                            console.log("Document successfully deleted.");
+                            siteSelector.innerHTML = "<option disabled selected>Select</option>";
+                            siteNameInput.value = "";
+                            siteLatitudeInput.value = "";
+                            siteLongitudeInput.value = "";
+                            selectedSite1["siteId"] = null;
+                            populateSiteSelector();
+                        })
+                        .catch((error) => {
+                            console.error("Error deleting document: ", error);
+                        });
+                    }
+                })
+            }
+        });
+
+
+        // Populate the city selector when the page loads
+        populateSiteSelector();
+    </script>
+</body>
+</html>

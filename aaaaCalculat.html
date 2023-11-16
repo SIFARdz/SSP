@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Tracker</title>
+  <style>
+    /* Add your styles here */
+  </style>
+</head>
+<body>
+  <h1>Student Tracker</h1>
+
+  <div>
+    <label for="sectionName">Section Name:</label>
+    <input type="text" id="sectionName">
+    <button onclick="addSection()">Add Section</button>
+  </div>
+
+  <div>
+    <label for="studentName">Student Name:</label>
+    <input type="text" id="studentName">
+    <select id="sectionDropdown"></select>
+    <button onclick="addStudent()">Add Student</button>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    const sections = {};
+
+    function addSection() {
+      const sectionName = document.getElementById("sectionName").value;
+      if (sectionName && !sections[sectionName]) {
+        sections[sectionName] = [];
+        updateSectionDropdown();
+      }
+    }
+
+    function addStudent() {
+      const studentName = document.getElementById("studentName").value;
+      const sectionDropdown = document.getElementById("sectionDropdown");
+      const sectionName = sectionDropdown.options[sectionDropdown.selectedIndex].value;
+
+      if (studentName && sectionName) {
+        sections[sectionName].push(studentName);
+        updateResult();
+      }
+    }
+
+    function updateSectionDropdown() {
+      const sectionDropdown = document.getElementById("sectionDropdown");
+      sectionDropdown.innerHTML = "";
+
+      for (const section in sections) {
+        const option = document.createElement("option");
+        option.value = section;
+        option.text = section;
+        sectionDropdown.add(option);
+      }
+    }
+
+    function updateResult() {
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+
+      for (const section in sections) {
+        const count = sections[section].length;
+        const paragraph = document.createElement("p");
+        paragraph.textContent = `${section}: ${count} students`;
+        resultDiv.appendChild(paragraph);
+      }
+    }
+  </script>
+</body>
+</html>

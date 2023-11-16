@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Profile</title>
+</head>
+<body>
+    <h1>User Profile</h1>
+    <div id="user-info">
+        <p><strong>Name:</strong> <span id="user-name"></span></p>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+    </div>
+
+    <h1>My Notes</h1>
+    <div id="note-form">
+        <input type="text" id="title-note-input" placeholder="Title" />
+        <input type="text" id="note-input" placeholder="Enter your note" />
+        <button id="save-note">Save Note</button>
+    </div>
+    <div id="note-list">
+        <!-- Notes will be displayed here -->
+        <!-- Example note div -->
+        <div class="note">
+            <h2>Title of the note</h2>
+            <p>Note content goes here.</p>
+            <button class="edit-note">Edit</button>
+            <button class="delete-note">Delete</button>
+        </div>
+        <!-- End of example note div -->
+    </div>
+
+    <!-- Logout button -->
+    <button id="logout-button">Logout</button>
+
+    <style>
+        /* styles.css */
+        /* ... (your CSS styles) ... */
+    </style>
+    <script type="module">
+        // Import Firebase Modular SDK
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.4.0/firebase-app.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/9.4.0/firebase-auth.js';
+        import { getDatabase, ref, push, onValue, remove } from 'https://www.gstatic.com/firebasejs/9.4.0/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgGXJoqe-stLcxVS7uERM6l3SOtu1Ez5Y",
+            authDomain: "gera-6e9ee.firebaseapp.com",
+            projectId: "gera-6e9ee",
+            storageBucket: "gera-6e9ee.appspot.com",
+            messagingSenderId: "331888265233",
+            appId: "1:331888265233:web:22f3ec6417d6b8ff3a49b0",
+            databaseURL: "https://gera-6e9ee-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // Check if a user is signed in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in
+                const userName = user.displayName;
+                const userEmail = user.email;
+
+                // Display user data on the profile page
+                document.getElementById("user-name").textContent = userName;
+                document.getElementById("user-email").textContent = userEmail;
+            } else {
+                // User is not signed in, handle accordingly (redirect to login, show a message, etc.)
+            }
+        });
+
+        // DOM elements
+        const titleNoteInput = document.getElementById("title-note-input");
+        const noteInput = document.getElementById("note-input");
+        const saveButton = document.getElementById("save-note");
+        const noteList = document.getElementById("note-list");
+
+        // Check if a user is signed in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in, you can access their data
+                const userId = user.uid;
+
+                // Get a reference to the user's notes in the database (replace 'notes' with your data structure)
+                const notesRef = ref(database, `notes/${userId}`);
+
+                // Add an event listener to the save button
+                saveButton.addEventListener("click", () => {
+                    const noteTitle = titleNoteInput.value.trim();
+                    const noteContent = noteInput.value.trim();
+
+                    if (noteTitle !== "" && noteContent !== "") {
+                        // Push a new note to the database
+                        push(notesRef, {
+                            title: noteTitle,
+                            content: noteContent,
+                            timestamp: Date.now()
+                        });
+ 
+                        // Clear input fields
+                        titleNoteInput.value = "";
+                        noteInput.value = "";
+
+                        // Display an alert
+                        window.alert("Note saved successfully!");
+                    }
+                });
+
+                // Display user's notes
+                onValue(notesRef, (snapshot) => {
+                    noteList.innerHTML = ""; // Clear previous notes
+                    if (snapshot.exists()) {
+                        const notes = snapshot.val();
+                        Object.keys(notes).forEach((noteId) => {
+                            const note = notes[noteId];
+                            const noteElement = document.createElement("div");
+                            noteElement.innerHTML = `
+                                <h2>${note.title}</h2>
+                                <p>${note.content}</p>
+                                <button class="edit-note" data-note-id="${noteId}">Edit</button>
+                                <button class="delete-note" data-note-id="${noteId}">Delete</button>
+                            `;
+                            noteList.appendChild(noteElement);
+                        });
+
+                        // Add event listeners for edit and delete buttons
+                        const editButtons = document.querySelectorAll(".edit-note");
+                        const deleteButtons = document.querySelectorAll(".delete-note");
+
+                        editButtons.forEach((button) => {
+                            button.addEventListener("click", () => {
+                                const noteId = button.getAttribute("data-note-id");
+                                // Implement edit logic here using the noteId
+    
+                            });
+                        });
+
+                        deleteButtons.forEach((button) => {
+                            button.addEventListener("click", () => {
+                                const noteId = button.getAttribute("data-note-id");
+                                // Implement delete logic here using the noteId
+                                // You can remove the note from the database using the noteId
+                                const noteRef = ref(database, `notes/${userId}/${noteId}`);
+                                remove(noteRef);
+                                        // Remove the note element from the DOM
+                                const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+                                if (noteElement) {
+                                         noteElement.remove();
+                                 } else {
+                                  console.error(`Note element with ID ${noteId} not found.`);
+                                 }
+                            });
+                        });
+                    }
+                });
+            } else {
+                // User is not signed in, handle accordingly (redirect to login, show a message, etc.)
+            }
+        });
+
+        // ... Firebase initialization and user data display code ...
+
+        // Get a reference to the logout button
+        const logoutButton = document.getElementById("logout-button");
+
+        // Add an event listener to the logout button
+        logoutButton.addEventListener("click", () => {
+            // Sign out the user
+            auth.signOut().then(() => {
+                // Sign-out successful, redirect to the login page
+                window.location.replace("login-testpage.html");
+            }).catch((error) => {
+                console.error("Error signing out:", error);
+                // Handle sign-out error if needed
+            });
+        });
+    </script>
+
+
+
+
+<style>
+    /* styles.css */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    text-align: center;
+}
+
+#user-info {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#note-form {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.note {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.note h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.note p {
+    font-size: 16px;
+}
+
+.edit-note,
+.delete-note {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.edit-note:hover,
+.delete-note:hover {
+    background-color: #0056b3;
+}
+
+#logout-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#logout-button:hover {
+    background-color: #c82333;
+}
+
+</style>
+</body>
+</html>

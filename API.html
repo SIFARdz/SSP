@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PVGIS Data Fetcher</title>
+</head>
+<body>
+    <h1>PVGIS Data Fetcher</h1>
+    
+    <form id="dataForm">
+        <label for="latitude">Latitude:</label>
+        <input type="text" id="latitude" placeholder="Enter latitude" required>
+        
+        <label for="longitude">Longitude:</label>
+        <input type="text" id="longitude" placeholder="Enter longitude" required>
+        
+        <label for="startYear">Start Year:</label>
+        <input type="number" id="startYear" placeholder="Enter start year" required>
+        
+        <label for="endYear">End Year:</label>
+        <input type="number" id="endYear" placeholder="Enter end year" required>
+        
+        <button type="button" onclick="getData()">Get Data</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        function getData() {
+            const latitude = document.getElementById('latitude').value;
+            const longitude = document.getElementById('longitude').value;
+            const startYear = document.getElementById('startYear').value;
+            const endYear = document.getElementById('endYear').value;
+            
+            const apiKey = 'YOUR_API_KEY';
+            const apiUrl = `https://re.jrc.ec.europa.eu/api/seriescalc?lat=${latitude}&lon=${longitude}&startyear=${startYear}&endyear=${endYear}&api_key=${apiKey}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the retrieved data here
+                    console.log(data);
+
+                    // Display the data on the web page (this is just an example)
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+    </script>
+</body>
+</html>

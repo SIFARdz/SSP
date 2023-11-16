@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Location Data Export</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body>
+    <h1>Location Data Export</h1>
+    
+    <div id="map" style="height: 400px;"></div>
+    
+    <form id="location-form">
+        <label for="latitude">Latitude:</label>
+        <input type="text" id="latitude" required>
+        <br>
+        <label for="longitude">Longitude:</label>
+        <input type="text" id="longitude" required>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        document.getElementById('location-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var latitude = parseFloat(document.getElementById('latitude').value);
+            var longitude = parseFloat(document.getElementById('longitude').value);
+            if (!isNaN(latitude) && !isNaN(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+                L.marker([latitude, longitude]).addTo(map)
+                    .bindPopup('Latitude: ' + latitude + '<br>Longitude: ' + longitude)
+                    .openPopup();
+            } else {
+                alert('Invalid coordinates. Latitude must be between -90 and 90, and longitude must be between -180 and 180.');
+            }
+        });
+    </script>
+</body>
+</html>

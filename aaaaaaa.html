@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Étudiants</title>
+</head>
+<body>
+
+        <div id="app">
+            <h1>Gestion des Sections et Étudiants</h1>
+            <button onclick="ajouterSection()">Ajouter une Section</button>
+            <div id="sectionsContainer"></div>
+            <button onclick="calculerMoyennes()">Calculer Moyennes</button>
+            <div id="resultats"></div>
+            <canvas id="graphiqueSections" width="400" height="200"></canvas>
+            <!-- Ajoutez ceci à l'intérieur de la div avec l'id "app" -->
+            <button onclick="telechargerPDF()">Télécharger en PDF</button>
+
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Ajoutez ceci dans la section head de votre HTML -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.js"></script>
+
+    <!-- Mettez à jour le lien vers la bibliothèque html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+
+
+
+
+
+
+
+
+
+
+    <style>
+        body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f7f7f7;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#app {
+    max-width: 800px;
+    margin: 20px;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+button {
+    padding: 12px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+section {
+    margin-top: 30px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: left;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #ddd;
+}
+
+    </style>
+    
+    <script>
+        let sections = [];
+let moyennesSections = [];
+
+function ajouterSection() {
+    let sectionName = prompt("Nom de la section :");
+    if (sectionName) {
+        sections.push({
+            name: sectionName,
+            students: []
+        });
+        afficherSections();
+    }
+}
+
+function ajouterEtudiant(sectionIndex) {
+    let studentName = prompt("Nom de l'étudiant :");
+    let studentGrade = parseFloat(prompt("Note de l'étudiant :"));
+
+    if (studentName && !isNaN(studentGrade)) {
+        sections[sectionIndex].students.push({
+            name: studentName,
+            grade: studentGrade
+        });
+        afficherSections();
+    }
+}
+
+function afficherSections() {
+    let sectionsContainer = document.getElementById("sectionsContainer");
+    sectionsContainer.innerHTML = "";
+
+    sections.forEach((section, index) => {
+        let sectionDiv = document.createElement("div");
+        sectionDiv.innerHTML = `<h2>${section.name}</h2>`;
+        
+        section.students.forEach(student => {
+            sectionDiv.innerHTML += `<p>${student.name} - ${student.grade}</p>`;
+        });
+
+        sectionDiv.innerHTML += `<button onclick="ajouterEtudiant(${index})">Ajouter un Étudiant</button>`;
+        sectionsContainer.appendChild(sectionDiv);
+    });
+}
+
+function calculerMoyennes() {
+    moyennesSections = [];
+
+    let resultatsDiv = document.getElementById("resultats");
+    resultatsDiv.innerHTML = "<h2>Résultats</h2>";
+
+    sections.forEach(section => {
+        let moyenneSection = 0;
+        section.students.forEach(student => {
+            moyenneSection += student.grade;
+        });
+
+        moyenneSection /= section.students.length;
+        moyennesSections.push({ section: section.name, moyenne: moyenneSection });
+
+        resultatsDiv.innerHTML += `<h3>${section.name} - Moyenne : ${moyenneSection.toFixed(2)}</h3>`;
+
+        section.students.sort((a, b) => b.grade - a.grade); // Tri des étudiants par note décroissante
+
+        resultatsDiv.innerHTML += "<table><tr><th>Nom de l'Étudiant</th><th>Note</th></tr>";
+
+        section.students.forEach(student => {
+            resultatsDiv.innerHTML += `<tr><td>${student.name}</td><td>${student.grade}</td></tr>`;
+        });
+
+        resultatsDiv.innerHTML += "</table>";
+    });
+
+    afficherGraphique();
+}
+
+function afficherGraphique() {
+    let labels = moyennesSections.map(item => item.section);
+    let data = moyennesSections.map(item => item.moyenne);
+
+    var ctx = document.getElementById("graphiqueSections").getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Moyenne par Section',
+                data: data,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// ...
+
+function telechargerPDF() {
+    const resultatsDiv = document.getElementById("resultats");
+    const options = {
+        margin: 10,
+        filename: 'resultats.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().from(resultatsDiv).set(options).outputPdf(pdf => {
+        const blob = new Blob([pdf], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = options.filename;
+        link.click();
+    });
+}
+
+// ...
+
+    </script>
+</body>
+</html>
