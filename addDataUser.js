@@ -296,7 +296,7 @@ map.on('click', function(e) {
         }
 
         // Event listener for when the user selects a city
-        mySelect_Site.addEventListener(" ", (event) => {
+        mySelect_Site.addEventListener("change", (event) => {
             const selectedsite = mySelect_Site.options[mySelect_Site.selectedIndex];
             selectedSite1 = {
                 siteName : selectedsite.text,
